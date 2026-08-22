@@ -127,7 +127,7 @@ jobs:
         run: Compress-Archive -Path .\dist\ScientificCalculator\* -DestinationPath .\dist\ScientificCalculator-windows.zip -Force
 
       - name: Upload final Windows assets
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-windows
           path: |
@@ -180,7 +180,7 @@ jobs:
           tar -C dist -czf dist/ScientificCalculator-linux.tar.gz ScientificCalculator
 
       - name: Upload final Linux asset
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-linux
           path: dist/ScientificCalculator-linux.tar.gz
@@ -259,7 +259,7 @@ jobs:
           dist/ScientificCalculator-macos-${{ matrix.architecture }}.zip
 
       - name: Upload final macOS asset
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-macos-${{ matrix.architecture }}
           path: dist/ScientificCalculator-macos-${{ matrix.architecture }}.zip

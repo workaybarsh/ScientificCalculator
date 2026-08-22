@@ -52,7 +52,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-windows
           path: coverage.xml
@@ -116,7 +116,7 @@ jobs:
           if (Test-Path -LiteralPath $applicationData) { throw 'Uninstall left Scientific Calculator application data behind.' }
 
       - name: Upload release candidates
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ScientificCalculator-windows
           path: |
@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-linux
           path: coverage.xml
@@ -178,7 +178,7 @@ jobs:
         run: tar -C dist -czf dist/ScientificCalculator-linux.tar.gz ScientificCalculator
 
       - name: Upload Linux test artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ScientificCalculator-linux-test
           path: dist/ScientificCalculator-linux.tar.gz
@@ -218,7 +218,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-macos-${{ matrix.architecture }}
           path: coverage.xml
@@ -267,7 +267,7 @@ jobs:
           dist/ScientificCalculator-macos-${{ matrix.architecture }}.zip
 
       - name: Upload macOS test artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ScientificCalculator-macos-${{ matrix.architecture }}-test
           path: dist/ScientificCalculator-macos-${{ matrix.architecture }}.zip
