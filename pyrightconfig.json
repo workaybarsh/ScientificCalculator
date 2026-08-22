@@ -1,0 +1,12 @@
+{
+  "include": [
+    "src/scientific_calculator/calculation_controller.py",
+    "src/scientific_calculator/calculation_worker.py",
+    "src/scientific_calculator/calculation_errors.py",
+    "src/scientific_calculator/cas_worker.py",
+    "src/scientific_calculator/settings_store.py",
+    "src/scientific_calculator/restart_manager.py",
+    "src/scientific_calculator/spreadsheet.py"
+  ],
+  "typeCheckingMode": "basic"
+}

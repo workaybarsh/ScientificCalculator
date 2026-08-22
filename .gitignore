@@ -1,0 +1,54 @@
+# Build and release output
+build/
+dist/
+*.spec
+*.exe
+*.msi
+*.rar
+*.zip
+installer-smoke-*/
+
+# Python caches and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage*
+*.coverage
+coverage*.json
+*-coverage.json
+*coverage*.json
+app_*_focus.json
+app_*_combined.json
+app_*_full.json
+*_baseline.json
+*_initial.json
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+.buildvenv/
+.env
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+~$*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
