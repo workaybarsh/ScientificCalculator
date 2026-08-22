@@ -1,0 +1,44 @@
+# Build and release output
+build/
+dist/
+*.spec
+*.exe
+*.msi
+*.rar
+*.zip
+installer-smoke-*/
+
+# Python caches and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+.buildvenv/
+.env
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+~$*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
