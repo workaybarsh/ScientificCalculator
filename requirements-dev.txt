@@ -8,4 +8,4 @@ pytest-cov==7.0.0
 ruff==0.16.4
 coverage==7.15.4
 pyright==1.1.411
-pip-audit==2.10.0
+pip-audit==2.10.1
