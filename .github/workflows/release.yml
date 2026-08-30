@@ -1,0 +1,547 @@
+name: Publish platform releases
+
+on:
+  push:
+    tags:
+      - "windows-x64-v*"
+      - "windows-arm64-v*"
+      - "linux-x86_64-v*"
+      - "linux-arm64-v*"
+      - "macos-intel-x64-v*"
+      - "macos-arm64-v*"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Architecture-specific release to publish
+        required: true
+        type: choice
+        options: [windows-x64, windows-arm64, linux-x86_64, linux-arm64, macos-intel-x64, macos-arm64]
+      tag:
+        description: Existing architecture tag, for example windows-x64-v1.2.1
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  quality:
+    name: Windows quality gate
+    runs-on: windows-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dependencies
+        shell: pwsh
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run required quality gates
+        shell: pwsh
+        run: |
+          python scripts/version_sync_check.py "${{ inputs.tag || github.ref_name }}"
+          python scripts/requirements_sync_check.py
+          python -m scientific_calculator --smoke-test
+          python -m ruff check src tests
+          python -m pyright
+          python -m pip_audit -r requirements.txt
+          python -m pytest -q --cov --cov-branch --cov-fail-under=100 --cov-report=term-missing --cov-report=xml --cov-report=json
+          python scripts/verify_coverage.py coverage.json
+
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: quality-evidence-${{ github.run_id }}
+          path: |
+            coverage.xml
+            coverage.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  windows-build:
+    name: Build Windows ${{ matrix.label }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'windows-')) || startsWith(github.ref_name, 'windows-') }}
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: x64
+            target: windows-x64
+            tag_prefix: windows-x64-v
+            runner: windows-latest
+            architecture: x64
+            installer_architecture: x64compatible
+            installer: ScientificCalculator_Setup_x64.exe
+            asset: ScientificCalculator-windows-x64.zip
+          - label: ARM64
+            target: windows-arm64
+            tag_prefix: windows-arm64-v
+            runner: windows-11-arm
+            architecture: arm64
+            installer_architecture: arm64
+            installer: ScientificCalculator_Setup_arm64.exe
+            asset: ScientificCalculator-windows-arm64.zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dependencies
+        shell: pwsh
+        run: python -m pip install -e ".[dev]"
+
+      - name: Build standalone executable
+        shell: pwsh
+        run: >-
+          python -m PyInstaller --noconfirm --clean --onedir --windowed
+          --name ScientificCalculator --icon assets\icons\app.ico
+          --hidden-import numpy.random._generator
+          --hidden-import PIL._tkinter_finder
+          --collect-all numpy
+          --collect-submodules scipy.stats --collect-submodules scipy.integrate
+          --collect-submodules scipy.sparse
+          --version-file packaging\windows\version_info.txt
+          --add-data "assets\skins\skin_graphite.png;skins"
+          --add-data "assets\skins\skin_blue.png;skins"
+          --add-data "assets\skins\skin_pink.png;skins"
+          --add-data "assets\skins\skin_white.png;skins"
+          --add-data "assets\icons\app.ico;icons"
+          --paths src src\scientific_calculator\__main__.py
+
+      - name: Smoke-test packaged executable
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath .\dist\ScientificCalculator\ScientificCalculator.exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged executable smoke test failed with exit code $($process.ExitCode)." }
+
+      - name: Build Windows ${{ matrix.label }} installer and portable archive
+        shell: pwsh
+        run: |
+          choco install innosetup --version=6.7.1 --yes --no-progress
+          $installerOutputBase = [System.IO.Path]::GetFileNameWithoutExtension("${{ matrix.installer }}")
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Qp "/DMyAppArchitecture=${{ matrix.installer_architecture }}" "/DMyOutputBaseFilename=$installerOutputBase" packaging\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE." }
+          Compress-Archive -Path .\dist\ScientificCalculator\* -DestinationPath ".\dist\${{ matrix.asset }}" -Force
+          Get-FileHash ".\dist\${{ matrix.installer }}" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  ${{ matrix.installer }}" } | Set-Content -Encoding ascii ".\dist\SHA256SUMS-${{ matrix.architecture }}.txt"
+          Get-FileHash ".\dist\${{ matrix.asset }}" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  ${{ matrix.asset }}" } | Add-Content -Encoding ascii ".\dist\SHA256SUMS-${{ matrix.architecture }}.txt"
+
+      - name: Upload Windows ${{ matrix.label }} release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-windows-${{ matrix.architecture }}
+          path: |
+            dist/${{ matrix.installer }}
+            dist/${{ matrix.asset }}
+            dist/SHA256SUMS-${{ matrix.architecture }}.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  windows-publish:
+    name: Publish Windows ${{ matrix.label }} release
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'windows-')) || startsWith(github.ref_name, 'windows-') }}
+    needs: windows-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: x64
+            target: windows-x64
+            tag_prefix: windows-x64-v
+            make_latest: true
+            architecture: x64
+            installer: ScientificCalculator_Setup_x64.exe
+            asset: ScientificCalculator-windows-x64.zip
+          - label: ARM64
+            target: windows-arm64
+            tag_prefix: windows-arm64-v
+            make_latest: false
+            architecture: arm64
+            installer: ScientificCalculator_Setup_arm64.exe
+            asset: ScientificCalculator-windows-arm64.zip
+    runs-on: windows-latest
+    steps:
+      - name: Check out tagged source for release verification
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download ${{ matrix.label }} archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-windows-${{ matrix.architecture }}
+          path: release
+
+      - name: Publish Windows release
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == matrix.target) || startsWith(github.ref_name, matrix.tag_prefix) }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          $releaseVersion = $env:RELEASE_TAG -replace '^windows-(?:x64|arm64)-v', ''
+          $applicationVersion = $releaseVersion
+          Move-Item ".\release\SHA256SUMS-${{ matrix.architecture }}.txt" .\release\SHA256SUMS.txt
+          @"
+          Windows ${{ matrix.label }} $releaseVersion
+
+          Scientific Calculator application build $applicationVersion for Windows.
+
+          Includes the ${{ matrix.label }} Inno Setup Wizard, direct-run portable archive, and SHA-256 checksum.
+          Quality gate: Ruff, Pyright, pip-audit, and 100% statement and branch coverage.
+          "@ | Set-Content -Encoding utf8 release-notes.md
+          gh release create $env:RELEASE_TAG `
+            ".\release\${{ matrix.installer }}" `
+            ".\release\${{ matrix.asset }}" `
+            .\release\SHA256SUMS.txt `
+            --verify-tag --latest=${{ matrix.make_latest }} `
+            --title "Scientific Calculator — Windows ${{ matrix.label }} $releaseVersion" --notes-file release-notes.md
+
+  linux-build:
+    name: Build Linux ${{ matrix.label }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'linux-')) || startsWith(github.ref_name, 'linux-') }}
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Intel or AMD 64-bit architecture
+            target: linux-x86_64
+            tag_prefix: linux-x86_64-v
+            runner: ubuntu-24.04
+            asset_architecture: x86_64
+            asset: ScientificCalculator-linux-x86_64.tar.gz
+            native: ScientificCalculator-linux-x86_64.deb
+            debian_architecture: amd64
+          - label: ARM 64-bit architecture
+            target: linux-arm64
+            tag_prefix: linux-arm64-v
+            runner: ubuntu-24.04-arm
+            asset_architecture: arm64
+            asset: ScientificCalculator-linux-arm64.tar.gz
+            native: ScientificCalculator-linux-arm64.deb
+            debian_architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Install Tk runtime and pinned dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes python3-tk xvfb
+          python -m pip install -e ".[dev]"
+
+      - name: Run the full test suite on the release runner
+        # The Windows ``quality`` job cannot observe a Linux-only regression,
+        # and a published binary must not be the first place one is noticed.
+        # Tk runs under the same xvfb display the packaged GUI smoke test
+        # already uses, so tests/test_ui_runtime.py really executes here rather
+        # than skipping itself.  The 100% coverage gate stays on the Windows
+        # job, which is where that baseline is calibrated.
+        run: xvfb-run -a python -m pytest -q
+
+      - name: Build standalone executable
+        run: >-
+          python -m PyInstaller --noconfirm --clean --onedir --windowed
+          --name ScientificCalculator
+          --hidden-import numpy.random._generator
+          --hidden-import PIL._tkinter_finder
+          --collect-all numpy
+          --collect-submodules scipy.stats --collect-submodules scipy.integrate
+          --collect-submodules scipy.sparse
+          --add-data "assets/skins/skin_graphite.png:skins"
+          --add-data "assets/skins/skin_blue.png:skins"
+          --add-data "assets/skins/skin_pink.png:skins"
+          --add-data "assets/skins/skin_white.png:skins"
+          --add-data "assets/icons/app.ico:icons"
+          --paths src src/scientific_calculator/__main__.py
+
+      - name: Smoke-test packaged executable
+        run: ./dist/ScientificCalculator/ScientificCalculator --smoke-test
+
+      - name: Smoke-test packaged Pillow and Tk bridge
+        run: xvfb-run -a ./dist/ScientificCalculator/ScientificCalculator --gui-smoke-test
+
+      - name: Create Linux application icon
+        run: |
+          mkdir -p dist/ScientificCalculator/icons
+          python -c "from PIL import Image; image = Image.open('assets/icons/app.ico').convert('RGBA'); image.resize((256, 256)).save('dist/ScientificCalculator/icons/scientific-calculator.png')"
+
+      - name: Add a direct-click portable launcher
+        run: |
+          cat > "dist/ScientificCalculator/Launch Scientific Calculator.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Scientific Calculator
+          Comment=Offline scientific calculator
+          Exec=sh -c "cd \"$(dirname \"$0\")\" && exec ./ScientificCalculator" %k
+          Icon=icons/scientific-calculator.png
+          Terminal=false
+          Categories=Education;Science;Math;
+          EOF
+          chmod 0755 "dist/ScientificCalculator/Launch Scientific Calculator.desktop"
+
+      - name: Create Linux native package, archive, and checksum
+        run: |
+          release_version="$(sed -E 's/^linux-(x86_64|arm64)-v//' <<< "${{ inputs.tag || github.ref_name }}")"
+          bash packaging/linux/build_deb.sh "$release_version" dist/ScientificCalculator "dist/${{ matrix.native }}" "${{ matrix.debian_architecture }}"
+          tar -C dist -czf dist/ScientificCalculator-linux-${{ matrix.asset_architecture }}.tar.gz ScientificCalculator
+          (cd dist && sha256sum "${{ matrix.native }}" "ScientificCalculator-linux-${{ matrix.asset_architecture }}.tar.gz") > "dist/SHA256SUMS-${{ matrix.asset_architecture }}.txt"
+
+      - name: Upload Linux ${{ matrix.label }} release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-linux-${{ matrix.asset_architecture }}
+          path: |
+            dist/${{ matrix.native }}
+            dist/ScientificCalculator-linux-${{ matrix.asset_architecture }}.tar.gz
+            dist/SHA256SUMS-${{ matrix.asset_architecture }}.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  linux-publish:
+    name: Publish Linux ${{ matrix.label }} release
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'linux-')) || startsWith(github.ref_name, 'linux-') }}
+    needs: linux-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Intel or AMD 64-bit architecture
+            target: linux-x86_64
+            tag_prefix: linux-x86_64-v
+            make_latest: false
+            asset_architecture: x86_64
+            asset: ScientificCalculator-linux-x86_64.tar.gz
+            native: ScientificCalculator-linux-x86_64.deb
+          - label: ARM 64-bit architecture
+            target: linux-arm64
+            tag_prefix: linux-arm64-v
+            make_latest: false
+            asset_architecture: arm64
+            asset: ScientificCalculator-linux-arm64.tar.gz
+            native: ScientificCalculator-linux-arm64.deb
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source for release verification
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download ${{ matrix.label }} archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-linux-${{ matrix.asset_architecture }}
+          path: release
+
+      - name: Publish Linux release
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == matrix.target) || startsWith(github.ref_name, matrix.tag_prefix) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          release_version="$(sed -E 's/^linux-(x86_64|arm64)-v//' <<< "$RELEASE_TAG")"
+          application_version="$release_version"
+          mv "release/SHA256SUMS-${{ matrix.asset_architecture }}.txt" release/SHA256SUMS.txt
+          cat > release-notes.md <<EOF
+          Linux ${{ matrix.label }} $release_version
+
+          Scientific Calculator application build $application_version for Linux.
+
+          Includes the ${{ matrix.label }} native Debian package, direct-run portable archive, and SHA-256 checksum.
+          EOF
+          gh release create "$RELEASE_TAG" \
+            "release/${{ matrix.native }}" \
+            "release/${{ matrix.asset }}" \
+            release/SHA256SUMS.txt \
+            --verify-tag --latest=${{ matrix.make_latest }} \
+            --title "Scientific Calculator — Linux ${{ matrix.label }} $release_version" --notes-file release-notes.md
+
+  macos-build:
+    name: Build macOS ${{ matrix.label }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'macos-')) || startsWith(github.ref_name, 'macos-') }}
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Intel x64
+            target: macos-intel-x64
+            tag_prefix: macos-intel-x64-v
+            runner: macos-15-intel
+            architecture: x86_64
+            asset: ScientificCalculator-macos-intel-x64.zip
+            native: ScientificCalculator_Setup_macos-intel-x64.pkg
+          - label: M Series
+            target: macos-arm64
+            tag_prefix: macos-arm64-v
+            runner: macos-15
+            architecture: arm64
+            asset: ScientificCalculator-macos-m-series.zip
+            native: ScientificCalculator_Setup_macos-m-series.pkg
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run the full test suite on the release runner
+        # Runs on the exact runner and architecture being shipped.  These hosts
+        # have no display server, so tests/test_ui_runtime.py skips itself; the
+        # rest of the suite still catches a macOS-specific regression before an
+        # artifact reaches a user.
+        run: python -m pytest -q
+
+      - name: Create native macOS application icons
+        run: |
+          iconset="dist/ScientificCalculator.iconset"
+          mkdir -p "$iconset"
+          ICONSET="$iconset" python - <<'PY'
+          import os
+          from pathlib import Path
+
+          from PIL import Image
+
+          source = Image.open("assets/icons/app.ico").convert("RGBA")
+          iconset = Path(os.environ["ICONSET"])
+          for size in (16, 32, 128, 256, 512):
+              for output_size, suffix in ((size, ""), (size * 2, "@2x")):
+                  source.resize(
+                      (output_size, output_size), Image.Resampling.LANCZOS
+                  ).save(
+                      iconset / f"icon_{size}x{size}{suffix}.png", format="PNG"
+                  )
+          PY
+          iconutil -c icns "$iconset" -o dist/ScientificCalculator.icns
+
+      - name: Build macOS application bundle
+        run: >-
+          python -m PyInstaller --noconfirm --clean --onedir --windowed
+          --name ScientificCalculator
+          --icon dist/ScientificCalculator.icns
+          --osx-bundle-identifier io.github.workaybarsh.scientificcalculator
+          --target-architecture ${{ matrix.architecture }}
+          --hidden-import numpy.random._generator
+          --hidden-import PIL._tkinter_finder
+          --collect-all numpy
+          --collect-submodules scipy.stats --collect-submodules scipy.integrate
+          --collect-submodules scipy.sparse
+          --add-data "assets/skins/skin_graphite.png:skins"
+          --add-data "assets/skins/skin_blue.png:skins"
+          --add-data "assets/skins/skin_pink.png:skins"
+          --add-data "assets/skins/skin_white.png:skins"
+          --add-data "assets/icons/app.ico:icons"
+          --paths src src/scientific_calculator/__main__.py
+
+      - name: Smoke-test packaged application
+        run: ./dist/ScientificCalculator.app/Contents/MacOS/ScientificCalculator --smoke-test
+
+      - name: Smoke-test packaged Pillow and Tk bridge
+        run: ./dist/ScientificCalculator.app/Contents/MacOS/ScientificCalculator --gui-smoke-test
+
+      - name: Create ${{ matrix.label }} native package, archive, and checksum
+        run: |
+          release_version="$(sed -E 's/^macos-(intel-x64|arm64)-v//' <<< "${{ inputs.tag || github.ref_name }}")"
+          bash packaging/macos/build_pkg.sh "$release_version" dist/ScientificCalculator.app "dist/${{ matrix.native }}"
+          ditto -c -k --sequesterRsrc --keepParent dist/ScientificCalculator.app "dist/${{ matrix.asset }}"
+          (cd dist && shasum -a 256 "${{ matrix.native }}" "${{ matrix.asset }}") > "dist/SHA256SUMS-${{ matrix.architecture }}.txt"
+
+      - name: Upload macOS ${{ matrix.label }} release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-macos-${{ matrix.architecture }}
+          path: |
+            dist/${{ matrix.native }}
+            dist/${{ matrix.asset }}
+            dist/SHA256SUMS-${{ matrix.architecture }}.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  macos-publish:
+    name: Publish macOS ${{ matrix.label }} release
+    if: ${{ (github.event_name == 'workflow_dispatch' && startsWith(inputs.target, 'macos-')) || startsWith(github.ref_name, 'macos-') }}
+    needs: macos-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Intel x64
+            target: macos-intel-x64
+            tag_prefix: macos-intel-x64-v
+            make_latest: false
+            architecture: x86_64
+            asset: ScientificCalculator-macos-intel-x64.zip
+            native: ScientificCalculator_Setup_macos-intel-x64.pkg
+          - label: M Series
+            target: macos-arm64
+            tag_prefix: macos-arm64-v
+            make_latest: false
+            architecture: arm64
+            asset: ScientificCalculator-macos-m-series.zip
+            native: ScientificCalculator_Setup_macos-m-series.pkg
+    runs-on: macos-15
+    steps:
+      - name: Check out tagged source for release verification
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download ${{ matrix.label }} archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-macos-${{ matrix.architecture }}
+          path: release
+
+      - name: Publish macOS release
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == matrix.target) || startsWith(github.ref_name, matrix.tag_prefix) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          release_version="$(sed -E 's/^macos-(intel-x64|arm64)-v//' <<< "$RELEASE_TAG")"
+          mv "release/SHA256SUMS-${{ matrix.architecture }}.txt" release/SHA256SUMS.txt
+          cat > release-notes.md <<EOF
+          macOS ${{ matrix.label }} $release_version
+
+          Scientific Calculator application build $release_version for macOS.
+          Includes the ${{ matrix.label }} native installer package, direct-run portable bundle, and SHA-256 checksum.
+          The packages are currently unsigned and not notarized. Verify the SHA-256 checksum before use.
+          EOF
+          gh release create "$RELEASE_TAG" \
+            "release/${{ matrix.native }}" \
+            "release/${{ matrix.asset }}" \
+            release/SHA256SUMS.txt \
+            --verify-tag --latest=${{ matrix.make_latest }} \
+            --title "Scientific Calculator — macOS ${{ matrix.label }} $release_version" --notes-file release-notes.md

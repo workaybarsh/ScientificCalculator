@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools==75.8.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scientific-calculator"
+dynamic = ["version"]
+description = "A desktop scientific calculator with a safe expression parser."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+  "sympy==1.14.0",
+  "scipy==1.18.0",
+  "numpy==2.5.2",
+  "pillow==12.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "coverage==7.15.4",
+  "hypothesis==6.165.10",
+  "pip-audit==2.10.0",
+  "pyinstaller==6.22.2",
+  "pyright==1.1.411",
+  "pytest==9.1.1",
+  "pytest-cov==7.0.0",
+  "ruff==0.16.4",
+]
+
+[project.gui-scripts]
+scientific-calculator = "scientific_calculator.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "scientific_calculator._version.__version__"}
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "I", "UP", "SIM"]
+ignore = ["E401", "E701", "E702", "E703", "E731", "E741", "E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-config"
+
+[tool.coverage.run]
+branch = true
+# Use the source tree rather than an import-name matcher.  This also records
+# the legitimate ``python -m scientific_calculator`` frame, whose runtime name
+# is ``__main__`` rather than ``scientific_calculator.__main__``.
+source = ["src/scientific_calculator"]
+
+[tool.coverage.report]
+# The checked-in suite exercises every source and branch; keep CI from
+# accepting a later regression below the release baseline.
+fail_under = 100
+show_missing = true
