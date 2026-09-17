@@ -2,7 +2,7 @@
 
 ## Supported releases
 
-The project has independent release tracks. Use the latest release in the matching track for your platform: **Windows** (`windows-v*`), **Linux** (`linux-v*`), or **macOS** (`macos-v*`). Earlier releases in the same platform track should be replaced with the current one. The release page and [installation guide](docs/INSTALLATION.md) identify the matching file and architecture.
+The project has six independent platform-and-architecture release tracks: `windows-x64-v*`, `windows-arm64-v*`, `macos-intel-x64-v*`, `macos-arm64-v*`, `linux-x86_64-v*`, and `linux-arm64-v*`. Use the latest release in the track matching your platform and processor; earlier releases in the same track should be replaced with the current one. The release page and [installation guide](docs/INSTALLATION.md) identify the matching file and architecture.
 
 ## Reporting a vulnerability
 

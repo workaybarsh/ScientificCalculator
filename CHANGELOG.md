@@ -20,8 +20,8 @@ Initial public release.
   ordinary differential equations.
 - Exact symbolic output alongside Norm, Fix, and Sci numeric formatting, four
   calculator skins, eight UI scales, and persistent settings and history.
-- Six independent release tracks, each publishing a Setup Wizard, a direct-run
-  package, and a SHA-256 checksum.
+- Six independent release tracks, each publishing a native installer where that
+  format is available, a portable package, and a SHA-256 checksum.
 
 ### Security
 
