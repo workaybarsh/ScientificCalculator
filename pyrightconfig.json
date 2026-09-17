@@ -1,0 +1,4 @@
+{
+  "include": ["src/scientific_calculator"],
+  "typeCheckingMode": "basic"
+}

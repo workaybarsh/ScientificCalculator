@@ -1,0 +1,4 @@
+sympy==1.14.0
+scipy==1.18.0
+numpy==2.5.2
+pillow==12.3.0
