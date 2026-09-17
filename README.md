@@ -12,18 +12,18 @@ Scientific Calculator is an open-source desktop calculator for scientific, engin
 
 ## Download
 
-Choose the Setup Wizard for your operating system and processor. Each link starts the matching 1.0.0 download directly.
+Choose the installer for your operating system and processor. Each link starts the matching 1.0.0 download directly.
 
-| Device | Setup Wizard |
+| Device | Installer |
 | --- | --- |
 | Windows — Intel/AMD 64-bit | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/windows-x64-v1.0.0/ScientificCalculator_Setup_x64.exe) |
 | Windows — ARM64 | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/windows-arm64-v1.0.0/ScientificCalculator_Setup_arm64.exe) |
-| macOS — Intel | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/macos-intel-x64-v1.0.0/ScientificCalculator_Setup_macos-intel-x64.dmg) |
-| macOS — Apple silicon | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/macos-arm64-v1.0.0/ScientificCalculator_Setup_macos-m-series.dmg) |
-| Linux — Intel/AMD 64-bit | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-x86_64-v1.0.0/ScientificCalculator_Setup_linux-x86_64.run) |
-| Linux — ARM64 | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-arm64-v1.0.0/ScientificCalculator_Setup_linux-arm64.run) |
+| macOS — Intel | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/macos-intel-x64-v1.0.0/ScientificCalculator_Setup_macos-intel-x64.pkg) |
+| macOS — Apple silicon | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/macos-arm64-v1.0.0/ScientificCalculator_Setup_macos-m-series.pkg) |
+| Linux — Intel/AMD 64-bit | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-x86_64-v1.0.0/ScientificCalculator-linux-x86_64.deb) |
+| Linux — ARM64 | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-arm64-v1.0.0/ScientificCalculator-linux-arm64.deb) |
 
-Every release also publishes a direct-run package and a SHA-256 checksum. Verify the checksum before running a downloaded file. Installation, portable use, and complete removal are described in [Install, run, and remove](docs/INSTALLATION.md).
+Every release also publishes a portable direct-run package and a SHA-256 checksum. Verify the checksum before running a downloaded file. Installation, portable use, and complete removal are described in [Install, run, and remove](docs/INSTALLATION.md).
 
 ## Documentation
 
