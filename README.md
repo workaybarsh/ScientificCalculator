@@ -10,6 +10,16 @@
 
 Scientific Calculator is an open-source desktop calculator for scientific, engineering, and mathematical work. It keeps mathematical input and completed results on a calculator LCD, is fully navigable from the keyboard, and runs entirely offline: no account, no telemetry, and no network access during normal use.
 
+- [Download](#download)
+- [Documentation](#documentation)
+- [Features](#features)
+- [Calculation modes](#calculation-modes)
+- [Run from source](#run-from-source)
+- [Security](#security)
+- [Independence notice](#independence-notice)
+- [Code signing](#code-signing)
+- [License](#license)
+
 ## Download
 
 Choose the installer for your operating system and processor. Each link starts the matching 1.0.0 download directly.
