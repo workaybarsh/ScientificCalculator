@@ -9,13 +9,14 @@ on:
       - "linux-arm64-v*"
       - "macos-intel-x64-v*"
       - "macos-arm64-v*"
+      - "android-v*"
   workflow_dispatch:
     inputs:
       target:
         description: Architecture-specific release to publish
         required: true
         type: choice
-        options: [windows-x64, windows-arm64, linux-x86_64, linux-arm64, macos-intel-x64, macos-arm64]
+        options: [windows-x64, windows-arm64, linux-x86_64, linux-arm64, macos-intel-x64, macos-arm64, android]
       tag:
         description: Existing architecture tag, for example windows-x64-v1.2.1
         required: true
@@ -545,3 +546,79 @@ jobs:
             release/SHA256SUMS.txt \
             --verify-tag --latest=${{ matrix.make_latest }} \
             --title "Scientific Calculator — macOS ${{ matrix.label }} $release_version" --notes-file release-notes.md
+
+  android-build:
+    name: Fetch Android APK
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'android') || startsWith(github.ref_name, 'android-v') }}
+    needs: quality
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download the published Android APK from the port repository
+        # The APK is built once by workaybarsh/ScientificCalculator-android and is
+        # mirrored here byte-for-byte, so the README download table, the port
+        # repository, and this release all point at the same APK file.
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          release_version="${RELEASE_TAG#android-v}"
+          asset="ScientificCalculator-android-v${release_version}.apk"
+          base="https://github.com/workaybarsh/ScientificCalculator-android/releases/download/v${release_version}"
+          mkdir -p release
+          curl --fail --location --retry 3 --output "release/${asset}" "${base}/${asset}"
+          curl --fail --location --retry 3 --output release/SHA256SUMS.txt "${base}/SHA256SUMS.txt"
+          (cd release && sha256sum --check SHA256SUMS.txt)
+          test -s "release/${asset}"
+
+      - name: Upload Android release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-android
+          path: |
+            release/ScientificCalculator-android-*.apk
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  android-publish:
+    name: Publish Android release
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'android') || startsWith(github.ref_name, 'android-v') }}
+    needs: android-build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source for release verification
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download Android release files
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-android
+          path: release
+
+      - name: Publish Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          release_version="${RELEASE_TAG#android-v}"
+          cat > release-notes.md <<EOF
+          Android arm64-v8a / x86_64 $release_version
+
+          Scientific Calculator application build $release_version for Android.
+
+          Includes the universal APK (arm64-v8a and x86_64) and a SHA-256 checksum.
+          This is the same APK the Android port repository
+          (workaybarsh/ScientificCalculator-android) publishes; it is mirrored here so
+          every supported platform downloads from one project.
+          EOF
+          gh release create "$RELEASE_TAG" \
+            release/ScientificCalculator-android-v"$release_version".apk \
+            release/SHA256SUMS.txt \
+            --verify-tag --latest=false \
+            --title "Scientific Calculator — Android $release_version" --notes-file release-notes.md

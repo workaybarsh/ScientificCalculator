@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- A seventh `android-vX.Y.Z` release track. It downloads the universal Android
+  APK already published by the
+  [`workaybarsh/ScientificCalculator-android`](https://github.com/workaybarsh/ScientificCalculator-android)
+  repository, verifies its SHA-256 checksum, and mirrors that identical file to
+  this project's release. The README download table, the port repository, and
+  this project's `android-v1.0.0` release therefore all resolve to the same APK.
+
+### Changed
+
+- The README and the installation guide point the Android download at the
+  mirrored `android-v1.0.0` release file instead of the port repository's copy.
+
 ## 1.0.0 — 2026-10-05
 
 Initial public release.

@@ -6,7 +6,7 @@
 
 <p align="center">
   An offline desktop scientific calculator for Windows, Linux, and macOS.
-  Also available <a href="https://github.com/workaybarsh/ScientificCalculator-android/releases/tag/v1.0.0">for Android</a>.
+  Also available <a href="https://github.com/workaybarsh/ScientificCalculator/releases/tag/android-v1.0.0">for Android</a>.
 </p>
 
 Scientific Calculator is an open-source desktop calculator for scientific, engineering, and mathematical work. It keeps mathematical input and completed results on a calculator LCD, is fully navigable from the keyboard, and runs entirely offline: no account, no telemetry, and no network access during normal use.
@@ -33,9 +33,9 @@ Choose the installer for your operating system and processor. Each link starts t
 | macOS - Apple M series | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/macos-arm64-v1.0.0/ScientificCalculator_Setup_macos-m-series.pkg) |
 | Linux — Intel/AMD 64-bit | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-x86_64-v1.0.0/ScientificCalculator-linux-x86_64.deb) |
 | Linux — ARM64 | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/linux-arm64-v1.0.0/ScientificCalculator-linux-arm64.deb) |
-| Android - arm64-v8a, x86_64 | [Download](https://github.com/workaybarsh/ScientificCalculator-android/releases/download/v1.0.0/ScientificCalculator-android-v1.0.0.apk) |
+| Android — arm64-v8a, x86_64 | [Download](https://github.com/workaybarsh/ScientificCalculator/releases/download/android-v1.0.0/ScientificCalculator-android-v1.0.0.apk) |
 
-Every desktop release also publishes a portable direct-run package, and every release page carries a SHA-256 checksum list. Verify the checksum before running a downloaded file. Installation, portable use, and complete removal are described in [Install, run, and remove](docs/INSTALLATION.md).
+Every desktop release also publishes a portable direct-run package, and every release page carries a SHA-256 checksum list. Verify the checksum before running a downloaded file. The Android APK is the same universal build published by the [Android port repository](https://github.com/workaybarsh/ScientificCalculator-android) and mirrored to this project's `android-v1.0.0` release, so the table, the port repository, and this release all resolve to the identical file. Installation, portable use, and complete removal are described in [Install, run, and remove](docs/INSTALLATION.md).
 
 ## Documentation
 
@@ -80,7 +80,7 @@ Report a vulnerability privately through [GitHub's advisory form](https://github
 
 ## Independence notice
 
-Scientific Calculator is not an emulator, firmware clone, or affiliated product of any calculator manufacturer. It is an independent implementation that presents its own functionality through the widely recognized layout conventions of classic scientific calculators. It does not reproduce proprietary firmware and does not claim compatibility with any specific brand or model. An optional Android port is published separately for phones; the desktop application described here remains an offline Windows, Linux, and macOS calculator.
+Scientific Calculator is not an emulator, firmware clone, or affiliated product of any calculator manufacturer. It is an independent implementation that presents its own functionality through the widely recognized layout conventions of classic scientific calculators. It does not reproduce proprietary firmware and does not claim compatibility with any specific brand or model. An optional Android port is built in a separate repository and mirrored to this project's `android-v1.0.0` release for phones; the desktop application described here remains an offline Windows, Linux, and macOS calculator.
 
 ## Code signing
 

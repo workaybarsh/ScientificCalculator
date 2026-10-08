@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = ROOT / "src" / "scientific_calculator" / "_version.py"
 RELEASE_TAG_PATTERN = re.compile(
-    r"(?P<platform>windows-x64|windows-arm64|macos-intel-x64|macos-arm64|linux-x86_64|linux-arm64)"
+    r"(?P<platform>windows-x64|windows-arm64|macos-intel-x64|macos-arm64|linux-x86_64|linux-arm64|android)"
     r"-v(?P<version>\d+\.\d+\.\d+)"
 )
 
@@ -43,7 +43,8 @@ def parse_release_tag(tag: str) -> tuple[str, str]:
         raise ValueError(
             "invalid release tag: "
             f"{tag!r}; expected one of windows-x64-vX.Y.Z, windows-arm64-vX.Y.Z, "
-            "macos-intel-x64-vX.Y.Z, macos-arm64-vX.Y.Z, linux-x86_64-vX.Y.Z, or linux-arm64-vX.Y.Z"
+            "macos-intel-x64-vX.Y.Z, macos-arm64-vX.Y.Z, linux-x86_64-vX.Y.Z, "
+            "linux-arm64-vX.Y.Z, or android-vX.Y.Z"
         )
     return match.group("platform"), match.group("version")
 
@@ -63,6 +64,7 @@ def _current_document_errors(version: str) -> list[str]:
             "macos-arm64",
             "linux-x86_64",
             "linux-arm64",
+            "android",
         )
     )
     surfaces = {

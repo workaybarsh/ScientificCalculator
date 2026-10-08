@@ -1,4 +1,4 @@
-"""Verify that the six architecture release tags resolve to one source commit."""
+"""Verify that the seven architecture release tags resolve to one source commit."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import sys
 from version_sync_check import canonical_version, parse_release_tag
 
 TRACKS = (
-    "windows-x64", "windows-arm64", "macos-intel-x64", "macos-arm64", "linux-x86_64", "linux-arm64",
+    "windows-x64", "windows-arm64", "macos-intel-x64", "macos-arm64", "linux-x86_64", "linux-arm64", "android",
 )
 
 

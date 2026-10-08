@@ -105,9 +105,9 @@ Version values must agree in:
 - `packaging/windows/installer.iss`
 - `packaging/windows/version_info.txt`
 
-The canonical version is `src/scientific_calculator/_version.py`; never duplicate it by hand. Validate each architecture tag with `py scripts/version_sync_check.py <platform>-vX.Y.Z`. The independent release tracks build matching packages: Windows x64/ARM64 Setup Wizard and ZIP; macOS Intel and Apple M series `.pkg` and ZIP; Linux x86_64/ARM64 `.deb` and `.tar.gz`. Every track publishes SHA-256 checksums. Native removal must close the calculator and remove only its own data.
+The canonical version is `src/scientific_calculator/_version.py`; never duplicate it by hand. Validate each architecture tag with `py scripts/version_sync_check.py <platform>-vX.Y.Z`. The independent release tracks build matching packages: Windows x64/ARM64 Setup Wizard and ZIP; macOS Intel and Apple M series `.pkg` and ZIP; Linux x86_64/ARM64 `.deb` and `.tar.gz`; and Android, which mirrors the universal APK already built by the `workaybarsh/ScientificCalculator-android` repository so every Android download link serves that same file. Every track publishes SHA-256 checksums. Native removal must close the calculator and remove only its own data.
 
-Before publishing a six-track release, run `py scripts/verify_release_tag_set.py X.Y.Z`; it rejects a mixed-source tag set.
+Before publishing a seven-track release, run `py scripts/verify_release_tag_set.py X.Y.Z`; it rejects a mixed-source tag set.
 
 ## Definition of done
 

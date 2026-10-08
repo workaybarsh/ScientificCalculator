@@ -136,3 +136,24 @@ def test_shared_graphical_setup_wizard_keeps_the_windows_reference_flow_on_macos
     assert "Linux installs must stay inside your home folder." in wizard
     assert "Create a desktop shortcut" in wizard
     assert "scientific-calculator.png" in wizard
+
+
+def test_android_release_mirrors_the_universal_apk_from_the_port_repository():
+    workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+    android_build = workflow.split("  android-build:", maxsplit=1)[1].split(
+        "  android-publish:", maxsplit=1
+    )[0]
+    android_publish = workflow.split("  android-publish:", maxsplit=1)[1]
+
+    assert "android-v*" in workflow
+    assert "startsWith(github.ref_name, 'android-v')" in workflow
+    # The APK is fetched, checksum-verified, and mirrored; it is never rebuilt here.
+    assert "workaybarsh/ScientificCalculator-android" in android_build
+    assert "ScientificCalculator-android-v${release_version}.apk" in android_build
+    assert "sha256sum --check SHA256SUMS.txt" in android_build
+    assert "python -m PyInstaller" not in android_build
+    assert "name: release-android" in android_build
+    # The published release serves the byte-identical APK the port repository built.
+    assert 'release/ScientificCalculator-android-v"$release_version".apk' in android_publish
+    assert "release/SHA256SUMS.txt" in android_publish
+    assert "--latest=false" in android_publish

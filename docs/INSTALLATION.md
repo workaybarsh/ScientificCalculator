@@ -12,8 +12,9 @@ Scientific Calculator is distributed as independent platform-and-architecture re
 | macOS Apple M series | `macos-arm64-v1.0.0` | `ScientificCalculator_Setup_macos-m-series.pkg` | `ScientificCalculator-macos-m-series.zip` |
 | Linux — Intel or AMD 64-bit architecture | `linux-x86_64-v1.0.0` | `ScientificCalculator-linux-x86_64.deb` | `ScientificCalculator-linux-x86_64.tar.gz` |
 | Linux — ARM 64-bit architecture | `linux-arm64-v1.0.0` | `ScientificCalculator-linux-arm64.deb` | `ScientificCalculator-linux-arm64.tar.gz` |
+| Android — arm64-v8a, x86_64 | `android-v1.0.0` | `ScientificCalculator-android-v1.0.0.apk` | — |
 
-Every release contains a `SHA256SUMS.txt` file with hashes for the two packages on that release page.
+Every release contains a `SHA256SUMS.txt` file with hashes for the packages on that release page.
 
 ## Verify a download
 
@@ -36,7 +37,7 @@ sha256sum -c SHA256SUMS.txt
 shasum -a 256 ScientificCalculator_Setup_macos-m-series.pkg
 ```
 
-The Windows, Linux, and macOS packages are currently unsigned. macOS packages are also not notarized. Verify the hash first and follow the operating system's normal security guidance; do not bypass a security warning solely because the filename looks familiar. After verifying the checksum on macOS, open the app once with **Control-click → Open**; if macOS still blocks it, choose **Open Anyway** in **System Settings → Privacy & Security**. This is the supported disclosure path for an unsigned build.
+The Windows, Linux, and macOS packages are currently unsigned, and the macOS packages are not notarized. The Android APK is signed with the project's stable debug key, not a store key. Verify the hash first and follow the operating system's normal security guidance; do not bypass a security warning solely because the filename looks familiar. After verifying the checksum on macOS, open the app once with **Control-click → Open**; if macOS still blocks it, choose **Open Anyway** in **System Settings → Privacy & Security**. This is the supported disclosure path for an unsigned build.
 
 ## Install
 
@@ -75,6 +76,10 @@ Use the package matching the Mac:
 
 Open the matching `.pkg` with the native macOS Installer. Open it after verifying its checksum; it installs the calculator and its dedicated uninstaller into `/Applications`.
 
+### Android
+
+Install `ScientificCalculator-android-v1.0.0.apk` on a 64-bit Android device (arm64-v8a) or emulator (x86_64). The APK is compiled once by the [Android port repository](https://github.com/workaybarsh/ScientificCalculator-android) and mirrored unchanged to this project's `android-v1.0.0` release, so the download table, the port repository, and this release serve the same file. Android may ask you to allow installation from your browser or file manager because the APK is signed with the project's debug key rather than a store key; no Play Store listing is published.
+
 ## Run the portable package
 
 Portable packages do not create shortcuts or change the operating system. Extract the archive and run the application inside it.
@@ -92,6 +97,7 @@ Guided Setup Wizards remove the running application first, then remove the calcu
 | Windows | Use **Installed apps** / **Apps & features** to uninstall Scientific Calculator. The uninstaller closes `ScientificCalculator.exe` if it is open. |
 | Linux | Run `sudo apt remove scientific-calculator`. Its removal script closes the app, removes its app-owned data, and clears `/opt/ScientificCalculator` so the package can be installed again cleanly. |
 | macOS | Open **Scientific Calculator Uninstaller.app** from `/Applications`. It is installed by the `.pkg`; confirm removal when prompted. |
+| Android | Uninstall **Scientific Calculator** from **Settings → Apps** on the device. Its settings, memory, and history live in the app's private storage and are removed with it. |
 
 Deleting a portable archive is intentionally not a system uninstall, so it cannot automatically remove settings outside the extracted directory. For a portable installation that should leave no calculator data, use **SETUP → Reset to Defaults**, close the app, delete the extracted directory, and remove the app data directory if it remains:
 

@@ -21,6 +21,7 @@ SCRIPT = ROOT / "scripts" / "version_sync_check.py"
         "macos-arm64-v1.0.0",
         "linux-x86_64-v1.0.0",
         "linux-arm64-v1.0.0",
+        "android-v1.0.0",
     ),
 )
 def test_version_sync_accepts_each_supported_current_architecture_tag(tag: str) -> None:
